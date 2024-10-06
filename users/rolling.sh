@@ -6,14 +6,19 @@ SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
 
-# Prepare the content for the snippet
+# Content for the snippet
 CONTENT="
-**User**: ${DB_USER}  
-**Pass**: ${PASSWORD}  
-  
+## Access
 **IP**: ${IP_ADDRESS}  
 **Port**: ${DB_PORT}  
-**PMA**: [${PMA_URL}](${PMA_URL})"
+**PMA**: [${PMA_URL}](${PMA_URL})
+
+## User List
+**User PMA**: ${PMA_USER}  
+**Pass PMA**: ${PMA_PASS}  
+  
+**User DB**: ${DB_USER}  
+**Pass DB**: ${PASSWORD}"
 
 # Fetch existing snippets and delete the one with the matching title
 EXISTING_SNIPPET_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')

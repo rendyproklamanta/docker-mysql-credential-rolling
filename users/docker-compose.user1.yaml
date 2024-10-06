@@ -11,11 +11,13 @@ services:
       DB_PORT: "6033"
       DB_USER: "project_usr"
       DB_PREFIX: "dbname" # give all access to db with prefix dbname_
+      PMA_USER: "random_usr"
+      PMA_PASS: "undercover"
       PMA_URL: "http://192.168.1.0:8000"
       IP_ADDRESS: "192.168.1.0"
+      GITLAB_API_URL: "https://repo.cic-webpro.com"
       GITLAB_TOKEN: "your_personal_access_token"
       GITLAB_PROJECT_ID: "your_project_id"
-      GITLAB_API_URL: "https://repo.cic-webpro.com"
       GITLAB_SNIPPET_TITLE: "Database Credential"
     deploy:
       replicas: 1
