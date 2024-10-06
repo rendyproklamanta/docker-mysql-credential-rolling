@@ -8,12 +8,12 @@ GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
 
 # Prepare the content for the snippet
 CONTENT="
-User : ${DB_USER}
-Pass : ${PASSWORD}
+**User**: ${DB_USER}
+**Pass**: ${PASSWORD}
 
-IP : ${IP_ADDRESS}
-Port : ${DB_PORT}
-PMA : ${PMA_URL}"
+**IP**: ${IP_ADDRESS}
+**Port**: ${DB_PORT}
+**PMA**: [${PMA_URL}](${PMA_URL})"
 
 # Fetch existing snippets and delete the one with the matching title
 EXISTING_SNIPPET_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
@@ -28,7 +28,7 @@ fi
 RESPONSE=$(curl --request POST "$GITLAB_API_URL" \
   --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --form "title=$GITLAB_SNIPPET_TITLE" \
-  --form "file_name=$GITLAB_SNIPPET_TITLE" \
+  --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
   --form "content=$CONTENT" \
   --form "visibility=private")
 
