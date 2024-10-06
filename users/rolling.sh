@@ -8,11 +8,11 @@ GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
 
 # Prepare the content for the snippet
 CONTENT="
-**User**: ${DB_USER}
-**Pass**: ${PASSWORD}
-
-**IP**: ${IP_ADDRESS}
-**Port**: ${DB_PORT}
+**User**: ${DB_USER}  
+**Pass**: ${PASSWORD}  
+  
+**IP**: ${IP_ADDRESS}  
+**Port**: ${DB_PORT}  
 **PMA**: [${PMA_URL}](${PMA_URL})"
 
 # Fetch existing snippets and delete the one with the matching title
@@ -25,7 +25,7 @@ if [ -n "$EXISTING_SNIPPET_ID" ]; then
 fi
 
 # Create a new snippet in GitLab
-RESPONSE=$(curl --request POST "$GITLAB_API_URL" \
+RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
   --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --form "title=$GITLAB_SNIPPET_TITLE" \
   --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
