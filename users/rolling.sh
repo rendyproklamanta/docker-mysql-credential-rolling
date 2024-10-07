@@ -9,22 +9,22 @@ GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
 # Content for the snippet
 CONTENT="
 ## Access
-**IP**: ${IP_ADDRESS}  
-**Port**: ${DB_PORT}  
-**PMA**: [${PMA_URL}](${PMA_URL})
+**PhpMyAdmin** : [${PMA_URL}](${PMA_URL})  
+**Remote Host** : ${DB_REMOTE_HOST}  
+**Remote Port** : ${DB_PORT}
 
 ## User List
-**User PMA**: ${PMA_USER}  
-**Pass PMA**: ${PMA_PASS}  
+**User PMA** : ${PMA_USER}  
+**Pass PMA** : ${PMA_PASS}  
   
-**User DB**: ${DB_USER}  
-**Pass DB**: ${PASSWORD}"
+**User DB** : ${DB_USER}  
+**Pass DB** : ${PASSWORD}"
 
 # Fetch existing snippets and delete the one with the matching title
 EXISTING_SNIPPET_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
 
 if [ -n "$EXISTING_SNIPPET_ID" ]; then
-  echo "**** Deleting existing snippet with ID: $EXISTING_SNIPPET_ID ****"
+  echo "**** Delete existing snippet ID: $EXISTING_SNIPPET_ID ****"
   echo ""
   curl --request DELETE "$GITLAB_API_URL/$EXISTING_SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
 fi
@@ -45,8 +45,7 @@ if [ -n "$ERROR_MESSAGE" ]; then
   exit 1
 fi
 
-echo ""
-echo "**** Create snippet to project ID ${GITLAB_PROJECT_ID} successfuly ****"
+echo "**** Create snippet project ID ${GITLAB_PROJECT_ID} successfuly ****"
 echo ""
 
 # Change the user password or create user if not exists
@@ -57,8 +56,7 @@ ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 FLUSH PRIVILEGES;
 EOF
 
-echo ""
-echo "**** ${DB_USER} rolling password successfuly ****"
+echo "**** Eolling password ${DB_USER} successfuly ****"
 echo ""
 
 # Optionally, log the new password to a file (ensure this file is secured)
