@@ -11,8 +11,8 @@ services:
       DB_PORT: "6033"
       DB_USER: "project_usr"
       DB_PREFIX: "dbname" # give all access to db with prefix dbname_
-      PMA_USER: "random_usr"
-      PMA_PASS: "undercover"
+      PMA_USER: "pma_user"
+      PMA_PASS: "insert_from_pma_htpasswd"
       PMA_URL: "http://pma.secure.domain.com"
       DB_REMOTE_HOST: "db.secure.domain.com"
       GITLAB_API_URL: "https://repo.cic-webpro.com"

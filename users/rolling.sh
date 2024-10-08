@@ -56,8 +56,8 @@ ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 FLUSH PRIVILEGES;
 EOF
 
-echo "**** Eolling password ${DB_USER} successfuly ****"
+echo "**** Rolling password ${DB_USER} successfuly ****"
 echo ""
 
 # Optionally, log the new password to a file (ensure this file is secured)
-echo -e "New password for $DB_USER:\n$CONTENT" > /var/log/secrets.log
+echo -e "$CONTENT" > /var/log/secret-${DB_USER}.log
