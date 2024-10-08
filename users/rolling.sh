@@ -26,7 +26,7 @@ EXISTING_SNIPPET_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GI
 if [ -n "$EXISTING_SNIPPET_ID" ]; then
   echo "**** Delete existing snippet ID: $EXISTING_SNIPPET_ID ****"
   echo ""
-  curl --request DELETE "$GITLAB_API_URL/$EXISTING_SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
+  curl --silent --request DELETE "$GITLAB_API_URL/$EXISTING_SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
 fi
 
 # Create a new snippet in GitLab
