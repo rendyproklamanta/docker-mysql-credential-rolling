@@ -19,5 +19,4 @@ RUN echo "0 */4 * * * /usr/local/bin/rolling.sh >> /var/log/rolling.log 2>&1" > 
 RUN crontab /etc/crontab
 
 # Run crond inside mysql
-#CMD ["crond", "-f"]
-CMD ["/bin/bash", "-c", "/usr/local/bin/rolling.sh & crond -f"] # Execute rolling.sh in build
+CMD ["/bin/bash", "-c", "/usr/local/bin/rolling.sh & crond -f"]
