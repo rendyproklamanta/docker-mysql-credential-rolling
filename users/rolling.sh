@@ -51,7 +51,12 @@ echo ""
 # Change the user password or create user if not exists
 mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
 CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
+
 GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
+
+-- Revoke destructive privileges (DROP, DELETE, and TRUNCATE)
+REVOKE DROP, LOCK TABLES, ALTER, DELETE, TRUNCATE ON \`${DB_PREFIX}_%\`.* FROM '$DB_USER'@'%';
+
 ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 FLUSH PRIVILEGES;
 EOF

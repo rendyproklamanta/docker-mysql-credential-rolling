@@ -1,10 +1,27 @@
 # Rolling user password credential
 
-## Create docker secrets if not exist
+## Create dir and clone this repo to your server
+
+```shell
+mkdir -p /var/lib/mysql-credential-rolling
+cd /var/lib/mysql-credential-rolling
+git clone https://github.com/rendyproklamanta/docker-mysql-credential-rolling.git .
+```
+
+## Create docker secrets if not exist | if you have set before, just ignore it
 
 ```shell
 nano secrets.sh
 chmod +x secrets.sh && ./secrets.sh
+```
+
+## Need to change if you use mysql instead mariadb
+
+```shell
+nano users/rolling.sh
+
+mariadb -u xxxxxx
+mysql -u xxxxxx t
 ```
 
 ## Create Personal Access Token
