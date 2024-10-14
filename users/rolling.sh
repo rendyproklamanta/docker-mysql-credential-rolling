@@ -54,7 +54,7 @@ CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 
 GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
 
--- Revoke destructive privileges (DROP, DELETE, and TRUNCATE)
+-- Revoke destructive privileges
 REVOKE DROP, LOCK TABLES, ALTER, DELETE ON \`${DB_PREFIX}_%\`.* FROM '$DB_USER'@'%';
 
 ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
