@@ -15,6 +15,7 @@ services:
       PMA_PASS: "insert_from_pma_htpasswd"
       PMA_URL: "http://pma.secure.domain.com"
       DB_REMOTE_HOST: "db.secure.domain.com"
+      DB_REMOTE_PORT: "3301"
       GITLAB_API_URL: "https://repo.cic-webpro.com"
       GITLAB_TOKEN: "your_personal_access_token"
       GITLAB_PROJECT_ID: "your_project_id"

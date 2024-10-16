@@ -11,7 +11,7 @@ CONTENT="
 ## Access
 **PhpMyAdmin** : [${PMA_URL}](${PMA_URL})  
 **Remote Host** : ${DB_REMOTE_HOST}  
-**Remote Port** : ${DB_PORT}
+**Remote Port** : ${DB_REMOTE_PORT}
 
 ## User List
 **User PMA** : ${PMA_USER}  
