@@ -50,7 +50,11 @@ echo ""
 
 # Change the user password or create user if not exists
 mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
-CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
+-- Uncomment this to create user with SSL
+-- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
+
+-- Uncomment this to create user without SSL
+-- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 
 GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
 
@@ -61,8 +65,29 @@ ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
 FLUSH PRIVILEGES;
 EOF
 
-echo "**** Rolling password ${DB_USER} successfuly ****"
-echo ""
+# Check if the query was successful
+if [ $? -eq 0 ]; then
+  QUERY_STATUS="SUCCESS"
+  echo "**** Rolling password for ${DB_USER} successful ****"
+  # Optionally, log the new password to a file (ensure this file is secured)
+  echo -e "$CONTENT" > /var/log/secret-${DB_USER}.log
+else
+  QUERY_STATUS="FAILURE"
+  $ERROR_CONTENT = Error: Rolling password for ${DB_USER} failed
+  echo "**** ${ERROR_CONTENT} ****"
+  # Create a new snippet in GitLab
+  RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
+    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+    --form "title=$GITLAB_SNIPPET_TITLE" \
+    --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
+    --form "content=$ERROR_CONTENT" \
+    --form "visibility=private")
 
-# Optionally, log the new password to a file (ensure this file is secured)
-echo -e "$CONTENT" > /var/log/secret-${DB_USER}.log
+  # Check for errors in the response
+  ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+
+  if [ -n "$ERROR_MESSAGE" ]; then
+    echo "Error: $ERROR_MESSAGE"
+    exit 1
+  fi
+fi

@@ -15,15 +15,6 @@ nano secrets.sh
 chmod +x secrets.sh && ./secrets.sh
 ```
 
-## Need to change if you use mysql instead mariadb
-
-```shell
-nano users/rolling.sh
-
-mariadb -u xxxxxx
-mysql -u xxxxxx t
-```
-
 ## Create Personal Access Token
 
 - Go To gitlab setting
@@ -31,11 +22,37 @@ mysql -u xxxxxx t
 - Access Tokens
 - Checklist : api, read_api
 
-## Edit yaml file
+## Need modification
+
+- in rolling.sh
 
 ```shell
-cd users
-nano docker-compose.userxx.yaml
+nano users/rolling.sh
+```
+
+- Change to **mysql** if you use mysql instead mariadb
+
+```shell
+mariadb -u **** **** ****
+-- OR --
+mysql -u **** **** ****
+```
+
+- Uncomment **CREATE USER** this for creating user for SSL / no SSL
+
+```shell
+mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
+-- Uncomment this to create user with SSL
+-- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
+
+-- Uncomment this to create user without SSL
+-- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
+```
+
+- Edit yaml file
+
+```shell
+nano users/docker-compose.userxx.yaml
 ```
 
 ## Start the container
