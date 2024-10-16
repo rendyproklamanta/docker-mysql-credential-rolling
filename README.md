@@ -39,9 +39,10 @@ mysql -u **** **** ****
 ```
 
 - Uncomment **CREATE USER** this for creating user for SSL / no SSL
+- Delete **--ssl** if you not use ssl
 
 ```shell
-mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
+mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT --ssl <<EOF
 -- Uncomment this to create user with SSL
 -- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
 
