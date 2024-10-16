@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Variables
+DB_HOST=$(cat "$DB_HOST_FILE")
+DB_PORT=$(cat "$DB_PORT_FILE")
 SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
@@ -48,6 +50,8 @@ fi
 echo "**** Create snippet project ID ${GITLAB_PROJECT_ID} successfuly ****"
 echo ""
 
+STAGE_STATUS="SUCCESS"
+
 # Change the user password or create user if not exists
 mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
 -- Uncomment this to create user with SSL
@@ -67,12 +71,15 @@ EOF
 
 # Check if the query was successful
 if [ $? -eq 0 ]; then
-  QUERY_STATUS="SUCCESS"
   echo "**** Rolling password for ${DB_USER} successful ****"
   # Optionally, log the new password to a file (ensure this file is secured)
   echo -e "$CONTENT" > /var/log/secret-${DB_USER}.log
+  STAGE_STATUS="SUCCESS"
 else
-  QUERY_STATUS="FAILURE"
+  STAGE_STATUS="FAILED"
+fi
+
+if (STAGE_STATUS=="FAILED") {
   $ERROR_CONTENT = Error: Rolling password for ${DB_USER} failed
   echo "**** ${ERROR_CONTENT} ****"
   # Create a new snippet in GitLab
@@ -90,4 +97,4 @@ else
     echo "Error: $ERROR_MESSAGE"
     exit 1
   fi
-fi
+}

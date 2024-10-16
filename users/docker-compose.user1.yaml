@@ -12,8 +12,8 @@ services:
       #SUPER_PASSWORD: "my_password"
       SUPER_PASSWORD_FILE: "/run/secrets/db_super_paswd" # use docker secret to protect sensitive information
       SUPER_USER_FILE: "/run/secrets/db_super_user" # use docker secret to protect sensitive information
-      DB_HOST: "/run/secrets/db_host" # use docker secret to protect sensitive information
-      DB_PORT: "/run/secrets/db_port" # use docker secret to protect sensitive information
+      DB_HOST_FILE: "/run/secrets/db_host" # use docker secret to protect sensitive information
+      DB_PORT_PORT: "/run/secrets/db_port" # use docker secret to protect sensitive information
       DB_USER: "project_usr"
       DB_PREFIX: "dbname" # give all access to db with prefix dbname_
       PMA_USER: "pma_user"
