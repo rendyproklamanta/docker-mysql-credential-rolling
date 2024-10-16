@@ -53,7 +53,7 @@ echo ""
 STAGE_STATUS="SUCCESS"
 
 # Change the user password or create user if not exists
-mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT <<EOF
+mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT --ssl <<EOF
 -- Uncomment this to create user with SSL
 -- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
 
@@ -79,7 +79,7 @@ else
   STAGE_STATUS="FAILED"
 fi
 
-if (STAGE_STATUS=="FAILED") {
+if [ "$STAGE_STATUS" == "FAILED" ]; then
   $ERROR_CONTENT = Error: Rolling password for ${DB_USER} failed
   echo "**** ${ERROR_CONTENT} ****"
   # Create a new snippet in GitLab
@@ -97,4 +97,4 @@ if (STAGE_STATUS=="FAILED") {
     echo "Error: $ERROR_MESSAGE"
     exit 1
   fi
-}
+fi
