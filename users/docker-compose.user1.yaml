@@ -3,12 +3,17 @@ version: "3.8"
 services:
   mysql-user1:
     image: mysql-user-rolling
+    secrets:
+      - db_host
+      - db_port
+      - db_super_user
+      - db_super_paswd
     environment:
       #SUPER_PASSWORD: "my_password"
       SUPER_PASSWORD_FILE: "/run/secrets/db_super_paswd" # use docker secret to protect sensitive information
       SUPER_USER_FILE: "/run/secrets/db_super_user" # use docker secret to protect sensitive information
-      DB_HOST: "mariadb_maxscale"
-      DB_PORT: "6033"
+      DB_HOST: "/run/secrets/db_host" # use docker secret to protect sensitive information
+      DB_PORT: "/run/secrets/db_port" # use docker secret to protect sensitive information
       DB_USER: "project_usr"
       DB_PREFIX: "dbname" # give all access to db with prefix dbname_
       PMA_USER: "pma_user"
@@ -34,13 +39,14 @@ services:
         limits:
           cpus: "0.5"
           memory: "512M"
-    secrets:
-      - db_super_user
-      - db_super_paswd
     networks:
       - mariadb-network
 
 secrets:
+  db_host:
+    external: true
+  db_port:
+    external: true
   db_super_user:
     external: true
   db_super_paswd:
