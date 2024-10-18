@@ -24,34 +24,6 @@ chmod +x secrets.sh && ./secrets.sh
 
 ## Need modification
 
-- in rolling.sh
-
-```shell
-nano users/rolling.sh
-```
-
-- Change to **mysql** if you use mysql instead mariadb
-
-```shell
-mariadb -u **** **** ****
--- OR --
-mysql -u **** **** ****
-```
-
-- Uncomment **CREATE USER** this for creating user for SSL / no SSL
-- Delete **--ssl** if you not use ssl
-
-```shell
-mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT --ssl <<EOF
--- Uncomment this to create user with SSL
--- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
-
--- Uncomment this to create user without SSL
--- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
-```
-
-- Edit yaml file
-
 ```shell
 nano users/docker-compose.userxx.yaml
 ```

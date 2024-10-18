@@ -13,7 +13,7 @@ CONTENT="
 ## Access
 **PhpMyAdmin** : [${PMA_URL}](${PMA_URL})  
 **Remote Host** : ${DB_REMOTE_HOST}  
-**Remote Port** : ${DB_REMOTE_PORT}
+**Remote Port** : ${DB_PORT}
 
 ## User List
 **User PMA** : ${PMA_USER}  
@@ -58,14 +58,22 @@ echo ""
 
 STAGE_STATUS="SUCCESS"
 
+## ------------------------------------------------------------------------------------
+
+# SQL command
+SQL_COMMAND="$SQL_SERVICE -u$SUPER_USER -p$SUPER_PASSWORD -h $DB_HOST -P $DB_PORT"
+QUERY="CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD'"
+
+# Add SSL options if ENABLE_SSL is true
+if [ "$ENABLE_SSL" = true ]; then
+    SQL_COMMAND+=" --ssl --ssl-ca=/etc/my.cnf.d/tls/ca-cert.pem --ssl-cert=/etc/my.cnf.d/tls/client-cert.pem --ssl-key=/etc/my.cnf.d/tls/client-key.pem"
+    QUERY+=" REQUIRE X509"
+fi
+
 # Change the user password or create user if not exists
-SQL_OUTPUT=$(mariadb -u$SUPER_USER -p${SUPER_PASSWORD} -h $DB_HOST -P $DB_PORT --ssl <<EOF
--- Uncomment this to create user with SSL
--- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' REQUIRE X509;
+SQL_OUTPUT=$($SQL_COMMAND <<EOF
 
--- Uncomment this to create user without SSL
--- CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
-
+$QUERY;
 GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
 
 -- Revoke destructive privileges
