@@ -22,7 +22,7 @@ services:
       SUPER_PASSWORD_FILE: "/run/secrets/db_super_paswd" # use docker secret to protect sensitive information
       SUPER_USER_FILE: "/run/secrets/db_super_user" # use docker secret to protect sensitive information
       DB_HOST_FILE: "/run/secrets/db_host" # use docker secret to protect sensitive information
-      DB_PORT_PORT: "/run/secrets/db_port" # use docker secret to protect sensitive information
+      DB_PORT_FILE: "/run/secrets/db_port" # use docker secret to protect sensitive information
       SQL_SERVICE: "mariadb"  # Set mariadb/mysql service
       ENABLE_SSL: "false"  # Set to true or false
 #    volumes:
