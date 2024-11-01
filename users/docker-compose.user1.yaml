@@ -26,7 +26,7 @@ services:
       SQL_SERVICE: "mariadb"  # Set mariadb/mysql service
       ENABLE_SSL: "false"  # Set to true or false
 #    volumes:
-#      - /data/mariadb/tls:/etc/my.cnf.d/tls # Uncomment if ENABLE_SSL: true >> Change with your ssl/tls location path
+#      - /etc/secure/mariadb/tls:/etc/my.cnf.d/tls # Uncomment if ENABLE_SSL: true >> Change with your ssl/tls location path
     deploy:
       replicas: 1
       update_config:
