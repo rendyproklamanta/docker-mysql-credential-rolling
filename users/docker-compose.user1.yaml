@@ -6,8 +6,8 @@ services:
     secrets:
       - db_host
       - db_port
-      - db_super_user
-      - db_super_paswd
+      - db_superadmin
+      - db_superadmin_paswd
     environment:
       DB_PREFIX: "dbname" # << Change | give all access to db with prefix dbname_
       DB_USER: "project_usr" # << Change
@@ -19,14 +19,14 @@ services:
       GITLAB_TOKEN: "your_personal_access_token" # << Change
       GITLAB_PROJECT_ID: "your_project_id" # << Change
       GITLAB_SNIPPET_TITLE: "Database Credential" # << Change
-      SUPER_PASSWORD_FILE: "/run/secrets/db_super_paswd" # use docker secret to protect sensitive information
-      SUPER_USER_FILE: "/run/secrets/db_super_user" # use docker secret to protect sensitive information
+      SUPER_PASSWORD_FILE: "/run/secrets/db_superadmin_paswd" # use docker secret to protect sensitive information
+      SUPER_USER_FILE: "/run/secrets/db_superadmin" # use docker secret to protect sensitive information
       DB_HOST_FILE: "/run/secrets/db_host" # use docker secret to protect sensitive information
       DB_PORT_FILE: "/run/secrets/db_port" # use docker secret to protect sensitive information
-      SQL_SERVICE: "mariadb"  # Set mariadb/mysql service
-      ENABLE_SSL: "false"  # Set to true or false
-#    volumes:
-#      - /etc/secure/mariadb/tls:/etc/my.cnf.d/tls # Uncomment if ENABLE_SSL: true >> Change with your ssl/tls location path
+      SQL_SERVICE: "mariadb" # Set mariadb/mysql service
+      ENABLE_SSL: "false" # Set to true or false
+    #    volumes:
+    #      - /etc/secure/mariadb/tls:/etc/my.cnf.d/tls # Uncomment if ENABLE_SSL: true >> Change with your ssl/tls location path
     deploy:
       replicas: 1
       update_config:
@@ -49,9 +49,9 @@ secrets:
     external: true
   db_port:
     external: true
-  db_super_user:
+  db_superadmin:
     external: true
-  db_super_paswd:
+  db_superadmin_paswd:
     external: true
 
 networks:

@@ -14,7 +14,7 @@ FLUSH PRIVILEGES;
 EOF
 
 # set docker secrets
-docker secret rm db_super_paswd && echo "${PASSWORD}" | docker secret create db_super_paswd -
+docker secret rm db_superadmin_paswd && echo "${PASSWORD}" | docker secret create db_superadmin_paswd -
 
 # log the new password to a file (ensure this file is secured)
 echo -e "New password for $DB_USER: $PASSWORD" > /var/log/super.log

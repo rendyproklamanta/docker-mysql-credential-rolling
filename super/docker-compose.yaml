@@ -5,8 +5,8 @@ services:
     image: mysql-super-rolling
     environment:
       #- SUPER_PASSWORD=my_password
-      SUPER_PASSWORD_FILE: "/run/secrets/db_super_paswd" # use docker secret to protect sensitive information
-      SUPER_USER_FILE: "/run/secrets/db_super_user" # use docker secret to protect sensitive information
+      SUPER_PASSWORD_FILE: "/run/secrets/db_superadmin_paswd" # use docker secret to protect sensitive information
+      SUPER_USER_FILE: "/run/secrets/db_superadmin" # use docker secret to protect sensitive information
       DB_HOST: "mariadb_maxscale"
       DB_PORT: "6033"
       DB_USER: "super_usr"
@@ -25,15 +25,15 @@ services:
           cpus: "0.5"
           memory: "512M"
     secrets:
-      - db_super_user
-      - db_super_paswd
+      - db_superadmin
+      - db_superadmin_paswd
     networks:
       - mariadb-network
 
 secrets:
-  db_super_user:
+  db_superadmin:
     external: true
-  db_super_paswd:
+  db_superadmin_paswd:
     external: true
 
 networks:
