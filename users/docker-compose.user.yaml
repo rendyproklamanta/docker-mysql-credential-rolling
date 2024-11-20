@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  mysql-user1:
+  mysql-user1: # << Change | service name for each users : mysql-user1, mysql-user2
     image: mysql-user-rolling
     secrets:
       - db_host

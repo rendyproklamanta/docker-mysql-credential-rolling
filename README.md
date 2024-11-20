@@ -25,7 +25,15 @@ chmod +x secrets.sh && ./secrets.sh
 ## Need modification
 
 ```shell
-nano users/docker-compose.userxx.yaml
+nano users/docker-compose.user.yaml
+```
+
+## Add more users
+
+```shell
+cp -rf users/docker-compose.user.yaml users/docker-compose.newuser.yaml
+nano users/docker-compose.newuser.yaml
+nano start.sh
 ```
 
 ## Start the container
