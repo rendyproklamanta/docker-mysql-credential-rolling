@@ -11,14 +11,14 @@ services:
     environment:
       DB_PREFIX: "dbname" # << Change | give all access to db with prefix dbname_
       DB_USER: "project_usr" # << Change
-      PMA_USER: "pma_user" # << Change
+      PMA_USER: "pma_user"
       PMA_PASS: "insert_from_pma_htpasswd" # << Change
       PMA_URL: "http://pma.secure.domain.com" # << Change
       DB_REMOTE_HOST: "db.secure.domain.com" # << Change
       GITLAB_API_URL: "https://repo.cic-webpro.com" # << Change
       GITLAB_TOKEN: "your_personal_access_token" # << Change
       GITLAB_PROJECT_ID: "your_project_id" # << Change
-      GITLAB_SNIPPET_TITLE: "Database Credential" # << Change
+      GITLAB_SNIPPET_TITLE: "Database Credential"
       SUPER_PASSWORD_FILE: "/run/secrets/db_superadmin_paswd" # use docker secret to protect sensitive information
       SUPER_USER_FILE: "/run/secrets/db_superadmin" # use docker secret to protect sensitive information
       DB_HOST_FILE: "/run/secrets/db_host" # use docker secret to protect sensitive information
