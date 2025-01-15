@@ -3,16 +3,16 @@
 ## Create dir and clone this repo to your server
 
 ```shell
-mkdir -p /var/lib/mysql-credential-rolling
+sudo mkdir -p /var/lib/mysql-credential-rolling
 cd /var/lib/mysql-credential-rolling
-git clone https://github.com/rendyproklamanta/docker-mysql-credential-rolling.git .
+sudo git clone https://github.com/rendyproklamanta/docker-mysql-credential-rolling.git .
 ```
 
 ## Create docker secrets if not exist | if you have set before, just ignore it
 
 ```shell
-nano secrets.sh
-chmod +x secrets.sh && ./secrets.sh
+sudo nano secrets.sh
+sudo chmod +x secrets.sh && sudo ./secrets.sh
 ```
 
 ## Create Personal Access Token
@@ -25,12 +25,12 @@ chmod +x secrets.sh && ./secrets.sh
 ## Need modification
 
 ```shell
-nano docker-compose.yaml
-nano start.sh
+sudo nano docker-compose.yaml
+sudo nano start.sh
 ```
 
 ## Start the container
 
 ```shell
-chmod +x start.sh && ./start.sh
+sudo chmod +x start.sh && ./start.sh
 ```

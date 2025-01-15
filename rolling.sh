@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Variables
-DB_HOST=$(cat "$DB_HOST_FILE")
-DB_PORT=$(cat "$DB_PORT_FILE")
-SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
-SUPER_USER=$(cat "$SUPER_USER_FILE")
-PASSWORD=$(openssl rand -base64 12)  # Generate a random password
+DB_HOST=$(sudo cat "$DB_HOST_FILE")
+DB_PORT=$(sudo cat "$DB_PORT_FILE")
+SUPER_PASSWORD=$(sudo cat "$SUPER_PASSWORD_FILE")
+SUPER_USER=$(sudo cat "$SUPER_USER_FILE")
+PASSWORD=$(sudo openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
 
 # Content for the snippet
@@ -23,7 +23,7 @@ CONTENT="
 **Pass DB** : ${PASSWORD}"
 
 # Fetch existing snippets
-EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
+EXISTING_SNIPPET_IDS=$(sudo curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
 
 if [ -n "$EXISTING_SNIPPET_IDS" ]; then
   # Loop through each snippet ID and delete it
@@ -33,12 +33,12 @@ if [ -n "$EXISTING_SNIPPET_IDS" ]; then
   # Convert the IDs to an array
   for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
     echo "**** Delete existing snippet ID: $SNIPPET_ID ****"
-    curl --silent --request DELETE "$GITLAB_API_URL/$SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
+    sudo curl --silent --request DELETE "$GITLAB_API_URL/$SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
   done
 fi
 
 # Create a new snippet in GitLab
-RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
+RESPONSE=$(sudo curl --silent --request POST "$GITLAB_API_URL" \
   --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
   --form "title=$GITLAB_SNIPPET_TITLE" \
   --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
@@ -98,7 +98,7 @@ if [ "$STAGE_STATUS" == "FAILED" ]; then
   ERROR_CONTENT="Error: Rolling password for ${DB_USER} failed"
   echo "**** ${ERROR_CONTENT} ****"
   # Create a new snippet in GitLab
-  RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
+  RESPONSE=$(sudo curl --silent --request POST "$GITLAB_API_URL" \
     --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
     --form "title=$GITLAB_SNIPPET_TITLE" \
     --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \

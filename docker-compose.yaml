@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  mysql-username1: # << Change | service name for each users : mysql-user1, mysql-user2
+  username1: # << Change | service name for each users : username1, username2
     image: mysql-user-rolling
     secrets:
       - db_host
@@ -47,7 +47,7 @@ services:
   ## ------------------------------
   ## ADD addtional user below
   ## ------------------------------
-  # mysql-username2: # << Change | service name for each users : mysql-user1, mysql-user2
+  # username2: # << Change | service name for each users : mysql-user1, mysql-user2
   #   image: mysql-user-rolling
   #   secrets:
   #     - db_host
