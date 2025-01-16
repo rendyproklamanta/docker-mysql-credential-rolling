@@ -7,9 +7,50 @@ SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
+MAX_RETRIES=3
+RETRY_DELAY=5
+
+# Function to retry a command
+retry_command() {
+  local retries=0
+  local success=0
+  local command=$1
+
+  while [ $retries -lt $MAX_RETRIES ]; do
+    eval "$command" && success=1 && break
+    retries=$((retries + 1))
+    echo "Retry $retries/$MAX_RETRIES after failure. Retrying in $RETRY_DELAY seconds..."
+    sleep $RETRY_DELAY
+  done
+
+  if [ $success -eq 0 ]; then
+    echo "Error: Command failed after $MAX_RETRIES retries."
+
+    ERROR_CONTENT="Error: Rolling password for ${DB_USER} failed"
+    echo "**** ${ERROR_CONTENT} ****"
+    
+    # Create a new error snippet in GitLab
+    RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
+      --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      --form "title=$GITLAB_SNIPPET_TITLE" \
+      --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
+      --form "content=${ERROR_CONTENT}" \
+      --form "visibility=private")
+
+    # Check for errors in the response
+    ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+
+    if [ -n "$ERROR_MESSAGE" ]; then
+      echo "Error: $ERROR_MESSAGE"
+      exit 1
+    fi
+
+    exit 1
+  fi
+}
 
 # Content for the snippet
-CONTENT="
+CONTENT="\
 ## Access
 **PhpMyAdmin** : [${PMA_URL}](${PMA_URL})  
 **Remote Host** : ${DB_REMOTE_HOST}  
@@ -18,98 +59,65 @@ CONTENT="
 ## User List
 **User PMA** : ${PMA_USER}  
 **Pass PMA** : ${PMA_PASS}  
-  
+
 **User DB** : ${DB_USER}  
 **Pass DB** : ${PASSWORD}"
 
-# Fetch existing snippets
+# Fetch and delete existing snippets
 EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
 
 if [ -n "$EXISTING_SNIPPET_IDS" ]; then
-  # Loop through each snippet ID and delete it
   echo "**** Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
-  echo ""
-  
-  # Convert the IDs to an array
   for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
-    echo "**** Delete existing snippet ID: $SNIPPET_ID ****"
-    curl --silent --request DELETE "$GITLAB_API_URL/$SNIPPET_ID" --header "PRIVATE-TOKEN: $GITLAB_TOKEN"
+    delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+    retry_command "$delete_command"
   done
 fi
 
-# Create a new snippet in GitLab
-RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
-  --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  --form "title=$GITLAB_SNIPPET_TITLE" \
-  --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
-  --form "content=$CONTENT" \
-  --form "visibility=private")
-
-# Check for errors in the response
-ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-
-if [ -n "$ERROR_MESSAGE" ]; then
-  STAGE_STATUS="FAILED"
-  exit 1
-fi
-
-echo "**** Create snippet project ID ${GITLAB_PROJECT_ID} successfuly ****"
-echo ""
-
-STAGE_STATUS="SUCCESS"
-
-## ------------------------------------------------------------------------------------
-
 # SQL command
 SQL_COMMAND="$SQL_SERVICE -u$SUPER_USER -p$SUPER_PASSWORD -h $DB_HOST -P $DB_PORT"
-QUERY="CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD'"
+DB_PREFIX_ESCAPED="\\\`${DB_PREFIX}_%\\\`" # Escape backticks properly
 
-# Add SSL options if ENABLE_SSL is true
+# Construct SQL query
 if [ "$ENABLE_SSL" = true ]; then
-    SQL_COMMAND+=" --ssl --ssl-ca=/etc/my.cnf.d/tls/ca-cert.pem --ssl-cert=/etc/my.cnf.d/tls/client-cert.pem --ssl-key=/etc/my.cnf.d/tls/client-key.pem"
-    QUERY+=" REQUIRE X509"
+  SSL_REQUIRE="REQUIRE X509"
+else
+  SSL_REQUIRE=""
 fi
 
-# Change the user password or create user if not exists
-SQL_OUTPUT=$($SQL_COMMAND <<EOF 2>&1
-
-$QUERY;
-GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
-
--- Revoke destructive privileges
-REVOKE DROP, DELETE ON \`${DB_PREFIX}_%\`.* FROM '$DB_USER'@'%';
-
-ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD';
+QUERY=$(cat <<EOF
+CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' $SSL_REQUIRE;
+GRANT ALL PRIVILEGES ON ${DB_PREFIX_ESCAPED}.* TO '$DB_USER'@'%';
+REVOKE DROP, DELETE ON ${DB_PREFIX_ESCAPED}.* FROM '$DB_USER'@'%';
+ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$PASSWORD' $SSL_REQUIRE;
 FLUSH PRIVILEGES;
 EOF
 )
 
-# Check if the query was successful
-if [ $? -eq 0 ]; then
-  echo "**** Rolling password for ${DB_USER} successful ****"
-  # Optionally, log the new password to a file (ensure this file is secured)
-  echo -e "$CONTENT" > /var/log/secret-${DB_USER}.log
-  STAGE_STATUS="SUCCESS"
-else
-  STAGE_STATUS="FAILED"
+# Add SSL options to the command if SSL is enabled
+if [ "$ENABLE_SSL" = true ]; then
+  SQL_COMMAND+=" --ssl --ssl-ca=/etc/my.cnf.d/tls/ca-cert.pem --ssl-cert=/etc/my.cnf.d/tls/client-cert.pem --ssl-key=/etc/my.cnf.d/tls/client-key.pem"
 fi
 
-if [ "$STAGE_STATUS" == "FAILED" ]; then
-  ERROR_CONTENT="Error: Rolling password for ${DB_USER} failed"
-  echo "**** ${ERROR_CONTENT} ****"
+# Retry SQL commands
+sql_command="echo \"$QUERY\" | $SQL_COMMAND"
+retry_command "$sql_command"
+
+# Check if the SQL command was successful
+if [ $? -eq 0 ]; then
   # Create a new snippet in GitLab
-  RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
-    --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-    --form "title=$GITLAB_SNIPPET_TITLE" \
-    --form "file_name=${GITLAB_SNIPPET_TITLE}.md" \
-    --form "content=${ERROR_CONTENT}" \
-    --form "visibility=private")
+  create_snippet_command="curl --silent --request POST \"$GITLAB_API_URL\" \
+    --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \
+    --form \"title=$GITLAB_SNIPPET_TITLE\" \
+    --form \"file_name=${GITLAB_SNIPPET_TITLE}.md\" \
+    --form \"content=$CONTENT\" \
+    --form \"visibility=private\""
 
-  # Check for errors in the response
-  ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
+  retry_command "$create_snippet_command"
 
-  if [ -n "$ERROR_MESSAGE" ]; then
-    echo "Error: $ERROR_MESSAGE"
-    exit 1
-  fi
+  echo ""
+
+  echo "**** Rolling password for ${DB_USER} successful ****"
+  # Optionally, log the new password to a file (ensure this file is secured)
+  echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
 fi
