@@ -71,7 +71,7 @@ if [ "$ENABLE_SSL" = true ]; then
 fi
 
 # Change the user password or create user if not exists
-SQL_OUTPUT=$($SQL_COMMAND <<EOF
+SQL_OUTPUT=$($SQL_COMMAND <<EOF 2>&1
 
 $QUERY;
 GRANT ALL PRIVILEGES ON \`${DB_PREFIX}_%\`.* TO '$DB_USER'@'%';
