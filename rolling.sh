@@ -7,8 +7,8 @@ SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
-MAX_RETRIES=3
-RETRY_DELAY=5
+MAX_RETRIES=10
+RETRY_DELAY=10
 
 # Function to retry a command
 retry_command() {
