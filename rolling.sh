@@ -7,8 +7,9 @@ SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
-MAX_RETRIES=3
-RETRY_DELAY=5
+MAX_RETRIES=20 # retry attempt
+RETRY_DELAY=20 # seconds
+CURRENT_TIME=$(TZ=Asia/Jakarta date "+%d-%m-%Y %H:%M") # Get the current date and time
 
 # Function to retry a command
 retry_command() {
@@ -67,7 +68,7 @@ CONTENT="\
 EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
 
 if [ -n "$EXISTING_SNIPPET_IDS" ]; then
-  echo "**** Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
+  echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
   for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
     delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
     retry_command "$delete_command"
@@ -106,6 +107,7 @@ retry_command "$sql_command"
 # Check if the SQL command was successful
 if [ $? -eq 0 ]; then
   # Create a new snippet in GitLab
+  echo "**** [$CURRENT_TIME] Call API to create snippet ****"
   create_snippet_command="curl --silent --request POST \"$GITLAB_API_URL\" \
     --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \
     --form \"title=$GITLAB_SNIPPET_TITLE\" \
@@ -116,7 +118,6 @@ if [ $? -eq 0 ]; then
   retry_command "$create_snippet_command"
 
   echo ""
-
   echo "**** Rolling password for ${DB_USER} successful ****"
   # Optionally, log the new password to a file (ensure this file is secured)
   echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
