@@ -7,8 +7,8 @@ SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
-MAX_RETRIES=20 # retry attempt
-RETRY_DELAY=20 # seconds
+MAX_RETRIES=30 # retry attempt
+RETRY_DELAY=10 # seconds
 CURRENT_TIME=$(TZ=Asia/Jakarta date "+%d-%m-%Y %H:%M") # Get the current date and time
 
 # Function to retry a command
@@ -16,9 +16,26 @@ retry_command() {
   local retries=0
   local success=0
   local command=$1
+  local check_error=$2  # Pass an optional flag to check for "message" in the response
+  local response=""
 
   while [ $retries -lt $MAX_RETRIES ]; do
-    eval "$command" && success=1 && break
+    if [ "$check_error" = true ]; then
+      # Capture the command output
+      response=$(eval "$command")
+      error_message=$(echo "$response" | jq -r '.message // .error // empty')
+
+      if [ -n "$error_message" ]; then
+        echo "Error: $error_message"
+      else
+        success=1
+        break
+      fi
+    else
+      # Execute the command directly if error check is not needed
+      eval "$command" && success=1 && break
+    fi
+
     retries=$((retries + 1))
     echo "Retry $retries/$MAX_RETRIES after failure. Retrying in $RETRY_DELAY seconds..."
     sleep $RETRY_DELAY
@@ -71,7 +88,7 @@ if [ -n "$EXISTING_SNIPPET_IDS" ]; then
   echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
   for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
     delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
-    retry_command "$delete_command"
+    retry_command "$delete_command" true
   done
 fi
 
@@ -115,7 +132,7 @@ if [ $? -eq 0 ]; then
     --form \"content=$CONTENT\" \
     --form \"visibility=private\""
 
-  retry_command "$create_snippet_command"
+  retry_command "$create_snippet_command" true
 
   echo ""
   echo "**** Rolling password for ${DB_USER} successful ****"

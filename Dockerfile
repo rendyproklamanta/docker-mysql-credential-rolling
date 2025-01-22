@@ -5,7 +5,7 @@ FROM logiqx/mysql-client
 USER root
 
 # Install necessary packages
-RUN apk add --no-cache bash curl jq openssl curl
+RUN apk add --no-cache bash curl jq openssl curl tzdata nano
 
 # Copy the script into the container
 COPY rolling.sh /usr/local/bin/rolling.sh
