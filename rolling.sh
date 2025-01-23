@@ -81,17 +81,6 @@ CONTENT="\
 **User DB** : ${DB_USER}  
 **Pass DB** : ${PASSWORD}"
 
-# Fetch and delete existing snippets
-EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
-
-if [ -n "$EXISTING_SNIPPET_IDS" ]; then
-  echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
-  for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
-    delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
-    retry_command "$delete_command" true
-  done
-fi
-
 # SQL command
 SQL_COMMAND="$SQL_SERVICE -u$SUPER_USER -p$SUPER_PASSWORD -h $DB_HOST -P $DB_PORT"
 DB_PREFIX_ESCAPED="\\\`${DB_PREFIX}_%\\\`" # Escape backticks properly
@@ -123,6 +112,17 @@ retry_command "$sql_command"
 
 # Check if the SQL command was successful
 if [ $? -eq 0 ]; then
+  # Fetch and delete existing snippets
+  EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
+
+  if [ -n "$EXISTING_SNIPPET_IDS" ]; then
+    echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
+    for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
+      delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+      retry_command "$delete_command" true
+    done
+  fi
+
   # Create a new snippet in GitLab
   echo "**** [$CURRENT_TIME] Call API to create snippet ****"
   create_snippet_command="curl --silent --request POST \"$GITLAB_API_URL\" \
