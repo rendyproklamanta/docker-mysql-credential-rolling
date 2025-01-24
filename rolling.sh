@@ -112,7 +112,7 @@ retry_command "$sql_command"
 
 # Check if the SQL command was successful
 if [ $? -eq 0 ]; then
-  # Fetch and delete existing snippets
+  # Fetch and delete all existing snippets
   EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
 
   if [ -n "$EXISTING_SNIPPET_IDS" ]; then
@@ -136,6 +136,37 @@ if [ $? -eq 0 ]; then
 
   echo ""
   echo "**** Rolling password for ${DB_USER} successful ****"
+
+  # Fetch existing snippets with the same title
+  DUPLICATE_SNIPPETS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title)')
+
+  # Check if duplicates exist
+  if [ -n "$DUPLICATE_SNIPPETS" ]; then
+    # Parse snippet IDs from the response
+    SNIPPET_IDS=$(echo "$DUPLICATE_SNIPPETS" | jq -r '.id')
+
+    # Count the number of duplicate snippets
+    DUPLICATE_COUNT=$(echo "$SNIPPET_IDS" | wc -l)
+
+    # Output the count of duplicates
+    echo "**** [$CURRENT_TIME] Found $DUPLICATE_COUNT existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
+
+    if [ "$DUPLICATE_COUNT" -gt 1 ]; then
+      # Keep only the most recent snippet (optional: sort by creation date)
+      KEEP_SNIPPET_ID=$(echo "$SNIPPET_IDS" | head -n 1)  # Keep the first ID
+
+      echo "Keeping snippet with ID: $KEEP_SNIPPET_ID. Deleting others..."
+      
+      # Delete all other duplicates
+      for SNIPPET_ID in $SNIPPET_IDS; do
+        if [ "$SNIPPET_ID" != "$KEEP_SNIPPET_ID" ]; then
+          delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+          retry_command "$delete_command" true
+        fi
+      done
+    fi
+  fi
+
   # Optionally, log the new password to a file (ensure this file is secured)
   echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
 fi
