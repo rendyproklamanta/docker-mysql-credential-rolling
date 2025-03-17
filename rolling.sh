@@ -7,7 +7,7 @@ SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
 PASSWORD=$(openssl rand -base64 12)  # Generate a random password
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
-MAX_RETRIES=30 # retry attempt
+MAX_RETRIES=100 # retry attempt
 RETRY_DELAY=10 # seconds
 CURRENT_TIME=$(TZ=Asia/Jakarta date "+%d-%m-%Y %H:%M") # Get the current date and time
 
