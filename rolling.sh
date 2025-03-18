@@ -44,6 +44,17 @@ retry_command() {
   if [ $success -eq 0 ]; then
     echo "Error: Command failed after $MAX_RETRIES retries."
 
+    # Fetch and delete all existing snippets
+    EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
+
+    if [ -n "$EXISTING_SNIPPET_IDS" ]; then
+      echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
+      for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
+        delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+        retry_command "$delete_command" true
+      done
+    fi
+
     ERROR_CONTENT="Error: Rolling password for ${DB_USER} failed"
     echo "**** ${ERROR_CONTENT} ****"
     
@@ -118,14 +129,14 @@ if [ $? -eq 0 ]; then
   if [ -n "$EXISTING_SNIPPET_IDS" ]; then
     echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
     for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
-      delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+      delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
       retry_command "$delete_command" true
     done
   fi
 
   # Create a new snippet in GitLab
   echo "**** [$CURRENT_TIME] Call API to create snippet ****"
-  create_snippet_command="curl --silent --request POST \"$GITLAB_API_URL\" \
+  create_snippet_command="curl --verbose --silent --request POST \"$GITLAB_API_URL\" \
     --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \
     --form \"title=$GITLAB_SNIPPET_TITLE\" \
     --form \"file_name=${GITLAB_SNIPPET_TITLE}.md\" \
@@ -160,7 +171,7 @@ if [ $? -eq 0 ]; then
       # Delete all other duplicates
       for SNIPPET_ID in $SNIPPET_IDS; do
         if [ "$SNIPPET_ID" != "$KEEP_SNIPPET_ID" ]; then
-          delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+          delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
           retry_command "$delete_command" true
         fi
       done
