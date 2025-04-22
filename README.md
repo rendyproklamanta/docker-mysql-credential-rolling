@@ -26,7 +26,6 @@ sudo chmod +x secrets.sh && sudo ./secrets.sh
 
 ```shell
 sudo nano docker-compose.yaml
-sudo nano start.sh
 ```
 
 ## Start the container
