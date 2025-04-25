@@ -5,23 +5,22 @@ DB_HOST=$(cat "$DB_HOST_FILE")
 DB_PORT=$(cat "$DB_PORT_FILE")
 SUPER_PASSWORD=$(cat "$SUPER_PASSWORD_FILE")
 SUPER_USER=$(cat "$SUPER_USER_FILE")
-PASSWORD=$(openssl rand -base64 12)  # Generate a random password
+PASSWORD=$(openssl rand -base64 12)
 GITLAB_API_URL="${GITLAB_API_URL}/api/v4/projects/$GITLAB_PROJECT_ID/snippets"
-MAX_RETRIES=100 # retry attempt
-RETRY_DELAY=10 # seconds
-CURRENT_TIME=$(TZ=Asia/Jakarta date "+%d-%m-%Y %H:%M") # Get the current date and time
+MAX_RETRIES=100
+RETRY_DELAY=10
+CURRENT_TIME=$(TZ=Asia/Jakarta date "+%d-%m-%Y %H:%M")
 
 # Function to retry a command
 retry_command() {
   local retries=0
   local success=0
   local command=$1
-  local check_error=$2  # Pass an optional flag to check for "message" in the response
+  local check_error=$2
   local response=""
 
   while [ $retries -lt $MAX_RETRIES ]; do
     if [ "$check_error" = true ]; then
-      # Capture the command output
       response=$(eval "$command")
       error_message=$(echo "$response" | jq -r '.message // .error // empty')
 
@@ -32,7 +31,6 @@ retry_command() {
         break
       fi
     else
-      # Execute the command directly if error check is not needed
       eval "$command" && success=1 && break
     fi
 
@@ -44,21 +42,11 @@ retry_command() {
   if [ $success -eq 0 ]; then
     echo "Error: Command failed after $MAX_RETRIES retries."
 
-    # Fetch and delete all existing snippets
-    EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
-
-    if [ -n "$EXISTING_SNIPPET_IDS" ]; then
-      echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
-      for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
-        delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
-        retry_command "$delete_command" true
-      done
-    fi
+    delete_existing_snippets
 
     ERROR_CONTENT="Error: Rolling password for ${DB_USER} failed"
     echo "**** ${ERROR_CONTENT} ****"
-    
-    # Create a new error snippet in GitLab
+
     RESPONSE=$(curl --silent --request POST "$GITLAB_API_URL" \
       --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
       --form "title=$GITLAB_SNIPPET_TITLE" \
@@ -66,15 +54,26 @@ retry_command() {
       --form "content=${ERROR_CONTENT}" \
       --form "visibility=private")
 
-    # Check for errors in the response
     ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // empty')
-
     if [ -n "$ERROR_MESSAGE" ]; then
       echo "Error: $ERROR_MESSAGE"
       exit 1
     fi
 
     exit 1
+  fi
+}
+
+# Function to delete all existing snippets with the same title
+delete_existing_snippets() {
+  EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
+
+  if [ -n "$EXISTING_SNIPPET_IDS" ]; then
+    echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
+    for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
+      delete_command="curl --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
+      retry_command "$delete_command" true
+    done
   fi
 }
 
@@ -94,9 +93,8 @@ CONTENT="\
 
 # SQL command
 SQL_COMMAND="$SQL_SERVICE -u$SUPER_USER -p$SUPER_PASSWORD -h $DB_HOST -P $DB_PORT"
-DB_PREFIX_ESCAPED="\\\`${DB_PREFIX}_%\\\`" # Escape backticks properly
+DB_PREFIX_ESCAPED="\\\`${DB_PREFIX}_%\\\`"
 
-# Construct SQL query
 if [ "$ENABLE_SSL" = true ]; then
   SSL_REQUIRE="REQUIRE X509"
 else
@@ -112,31 +110,18 @@ FLUSH PRIVILEGES;
 EOF
 )
 
-# Add SSL options to the command if SSL is enabled
 if [ "$ENABLE_SSL" = true ]; then
   SQL_COMMAND+=" --ssl --ssl-ca=/etc/my.cnf.d/tls/ca-cert.pem --ssl-cert=/etc/my.cnf.d/tls/client-cert.pem --ssl-key=/etc/my.cnf.d/tls/client-key.pem"
 fi
 
-# Retry SQL commands
 sql_command="echo \"$QUERY\" | $SQL_COMMAND"
 retry_command "$sql_command"
 
-# Check if the SQL command was successful
 if [ $? -eq 0 ]; then
-  # Fetch and delete all existing snippets
-  EXISTING_SNIPPET_IDS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title) | .id')
+  delete_existing_snippets
 
-  if [ -n "$EXISTING_SNIPPET_IDS" ]; then
-    echo "**** [$CURRENT_TIME] Deleting existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
-    for SNIPPET_ID in $EXISTING_SNIPPET_IDS; do
-      delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
-      retry_command "$delete_command" true
-    done
-  fi
-
-  # Create a new snippet in GitLab
-  echo "**** [$CURRENT_TIME] Call API to create snippet ****"
-  create_snippet_command="curl --verbose --silent --request POST \"$GITLAB_API_URL\" \
+  echo "**** [$CURRENT_TIME] Creating new snippet ****"
+  create_snippet_command="curl --silent --request POST \"$GITLAB_API_URL\" \
     --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\" \
     --form \"title=$GITLAB_SNIPPET_TITLE\" \
     --form \"file_name=${GITLAB_SNIPPET_TITLE}.md\" \
@@ -148,36 +133,5 @@ if [ $? -eq 0 ]; then
   echo ""
   echo "**** Rolling password for ${DB_USER} successful ****"
 
-  # Fetch existing snippets with the same title
-  DUPLICATE_SNIPPETS=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL?project_id=$GITLAB_PROJECT_ID" | jq --arg title "$GITLAB_SNIPPET_TITLE" '.[] | select(.title == $title)')
-
-  # Check if duplicates exist
-  if [ -n "$DUPLICATE_SNIPPETS" ]; then
-    # Parse snippet IDs from the response
-    SNIPPET_IDS=$(echo "$DUPLICATE_SNIPPETS" | jq -r '.id')
-
-    # Count the number of duplicate snippets
-    DUPLICATE_COUNT=$(echo "$SNIPPET_IDS" | wc -l)
-
-    # Output the count of duplicates
-    echo "**** [$CURRENT_TIME] Found $DUPLICATE_COUNT existing snippets with title: $GITLAB_SNIPPET_TITLE ****"
-
-    if [ "$DUPLICATE_COUNT" -gt 1 ]; then
-      # Keep only the most recent snippet (optional: sort by creation date)
-      KEEP_SNIPPET_ID=$(echo "$SNIPPET_IDS" | head -n 1)  # Keep the first ID
-
-      echo "Keeping snippet with ID: $KEEP_SNIPPET_ID. Deleting others..."
-      
-      # Delete all other duplicates
-      for SNIPPET_ID in $SNIPPET_IDS; do
-        if [ "$SNIPPET_ID" != "$KEEP_SNIPPET_ID" ]; then
-          delete_command="curl --verbose --silent --request DELETE \"$GITLAB_API_URL/$SNIPPET_ID\" --header \"PRIVATE-TOKEN: $GITLAB_TOKEN\""
-          retry_command "$delete_command" true
-        fi
-      done
-    fi
-  fi
-
-  # Optionally, log the new password to a file (ensure this file is secured)
   echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
 fi
