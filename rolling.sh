@@ -167,5 +167,3 @@ if [ $? -eq 0 ]; then
 
   echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
 fi
-
-delete_duplicate_snippets
