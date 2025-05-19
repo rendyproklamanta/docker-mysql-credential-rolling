@@ -166,4 +166,11 @@ if [ $? -eq 0 ]; then
   echo "**** Rolling password for ${DB_USER} successful ****"
 
   echo -e "$CONTENT" > "/var/log/secret-${DB_USER}.log"
+
+  # Wait 5 minutes before checking for duplicates
+  echo "**** Waiting 5 minutes before checking for duplicate snippets ****"
+  sleep 300
+
+  # Delete any duplicate snippets (keep the newest)
+  delete_duplicate_snippets
 fi
